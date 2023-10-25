@@ -2,24 +2,36 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <string.h>
+#define MAX_LEN 100
 
-void ToLowerArray(char *input) {
+void ToUpperArray(char *input) {
     for (size_t i = 0; i < strlen(input); i++) {
-        input[i] = tolower(input[i]);   
+        input[i] = toupper(input[i]);   
     }
 }
 
-int FindValidAdresses(char *input, char *founded_adress,
+int FindValidAdresses(char *input, char founded_adress[MAX_LEN + 1],
                       bool seen[127]) {
     /*
-    This function searches for valid addresses from standard input and stores them
+    This function searches for valid addresses from stdin and stores them
     in the 'founded_adress' string. It also tracks occurrences of the next character 
     in the 'seen' array and returns the count of found addresses. 
     */
-    char current_adress[100];
+    char current_adress[MAX_LEN + 1];
     int count = 0;
-    while (fgets(current_adress, sizeof(current_adress), stdin)) {
-        ToLowerArray(current_adress);
+    while (fgets(current_adress, MAX_LEN + 1, stdin)) {
+        //Handling maximum characters in line.  
+        if (strlen(current_adress) == MAX_LEN && current_adress[MAX_LEN] != '\n') {
+            current_adress[MAX_LEN] = '\0';
+            //Ignore next chars.
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF);
+        } 
+        else {  
+            current_adress[strlen(current_adress) - 1] = '\0';
+        }
+
+        ToUpperArray(current_adress);
         if (strncmp(input, current_adress, strlen(input)) == 0) {
             char last_char = current_adress[strlen(input)];
             if (!seen[(int)last_char]) {
@@ -44,13 +56,13 @@ void FilterEnableChars(bool seen[127], char *result) {
 }
 
 int main(int argc, char *argv[]) {
-    char input[100];
+    char input[MAX_LEN + 1];
     if (argc == 1) {
-        input[0] = '\0';
+        input[0] = '\0'; //Special case where len of input == 0.
     }
     else if (argc == 2) {
-        strcpy(input, argv[1]);
-        ToLowerArray(input);
+        strncpy(input, argv[1], MAX_LEN + 1);
+        ToUpperArray(input);
     }
     else {
         printf("Wrong number of arguments.\n");
@@ -58,16 +70,16 @@ int main(int argc, char *argv[]) {
     }
 
     bool seen[127] = {false}; //Every index is, if specific ASCII is enable.
-    char founded_adress[100];
+    char founded_adress[MAX_LEN + 1];
     int count = FindValidAdresses(input, founded_adress, seen);
     if (count == 0) {
         printf("Not found.\n");
     }
     else if (count == 1) {
-        printf("FOUND: %s\n", founded_adress);
+        printf("Found: %s\n", founded_adress);
     }
     else {
-        char result[94]; //126 - 32 = 94 (maximum of characters).
+        char result[95]; //126 - 32 + 1 NULL BYTE = 95 (maximum of characters).
         FilterEnableChars(seen, result);
         printf("Enable: %s\n", result);
     }
